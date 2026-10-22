@@ -9,7 +9,7 @@ mode, is written to the app's log. The app's own tools are plain functions in
 `study.tools` while a REPL is open.
 
 ```clojure
-io.github.p4ulcristian/study {:git/tag "v0.1.0" :git/sha "…"}
+io.github.p4ulcristian/study {:git/tag "v0.1.0" :git/sha "2531b45"}
 ```
 
 Needs only nREPL and malli. One public namespace, `study.api`.
