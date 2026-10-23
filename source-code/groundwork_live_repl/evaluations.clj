@@ -1,11 +1,11 @@
-(ns study.evaluations
+(ns groundwork-live-repl.evaluations
   "Every evaluation written to the app's log: the nREPL handler, wrapped
    outside every middleware, so no middleware the app adds (shadow-cljs's
    ClojureScript REPL among them) can take an evaluation past it.
 
    An \"eval\" or \"load-file\" message writes two lines: before it runs,
-   :study/evaluation-started, and when nREPL says it is done,
-   :study/evaluated, with how it ended. An evaluation that never ends, or
+   :groundwork-live-repl/evaluation-started, and when nREPL says it is done,
+   :groundwork-live-repl/evaluated, with how it ended. An evaluation that never ends, or
    ends the JVM, still left the first. Values are not written: what a REPL
    returns in production is the customers' data."
   (:require
@@ -23,12 +23,12 @@
    one), the code as sent (load-file: the file's text) and the file's
    path, when load-file names one."
   [{:keys [op id session ns code file file-path]}]
-  (cond-> {:study/op         op
-           :study/message-id id
-           :study/session    session
-           :study/namespace  ns
-           :study/code       (if (= "load-file" op) file code)}
-    (= "load-file" op) (assoc :study/file-path file-path)))
+  (cond-> {:groundwork-live-repl/op         op
+           :groundwork-live-repl/message-id id
+           :groundwork-live-repl/session    session
+           :groundwork-live-repl/namespace  ns
+           :groundwork-live-repl/code       (if (= "load-file" op) file code)}
+    (= "load-file" op) (assoc :groundwork-live-repl/file-path file-path)))
 
 (defn- status-names [response]
   (into #{} (map name) (let [status (:status response)]
@@ -80,12 +80,12 @@
 
 (defn wrap-handler-with-evaluation-log
   "handler, the whole nREPL stack, with every eval and load-file written to
-   log at level: :study/evaluation-started before it runs, and
-   :study/evaluated once nREPL says it is done, with :study/outcome
-   (:returned :threw :interrupted :refused), :study/values (how many came
-   back), :study/ended-in-namespace (the namespace the last value came back
-   in, nil when none did), and for :threw :study/error-class and
-   :study/root-error-class. Other ops pass as they came."
+   log at level: :groundwork-live-repl/evaluation-started before it runs, and
+   :groundwork-live-repl/evaluated once nREPL says it is done, with :groundwork-live-repl/outcome
+   (:returned :threw :interrupted :refused), :groundwork-live-repl/values (how many came
+   back), :groundwork-live-repl/ended-in-namespace (the namespace the last value came back
+   in, nil when none did), and for :threw :groundwork-live-repl/error-class and
+   :groundwork-live-repl/root-error-class. Other ops pass as they came."
   [handler log level]
   (fn [message]
     (if-not (contains? evaluating-ops (:op message))
@@ -98,14 +98,14 @@
               (let [now (swap! heard add-response response)]
                 (when (and (contains? (:statuses now) "done")
                            (.compareAndSet written false true))
-                  (log level :study/evaluated
+                  (log level :groundwork-live-repl/evaluated
                        (merge described
-                              {:study/session            (or (:session message) (:session response))
-                               :study/outcome            (outcome now)
-                               :study/values             (:values now)
-                               :study/ended-in-namespace (:ended-in-namespace now)}
+                              {:groundwork-live-repl/session            (or (:session message) (:session response))
+                               :groundwork-live-repl/outcome            (outcome now)
+                               :groundwork-live-repl/values             (:values now)
+                               :groundwork-live-repl/ended-in-namespace (:ended-in-namespace now)}
                               (when (:error-class now)
-                                {:study/error-class      (:error-class now)
-                                 :study/root-error-class (:root-error-class now)}))))))]
-        (log level :study/evaluation-started described)
+                                {:groundwork-live-repl/error-class      (:error-class now)
+                                 :groundwork-live-repl/root-error-class (:root-error-class now)}))))))]
+        (log level :groundwork-live-repl/evaluation-started described)
         (handler (assoc message :transport (make-watching-transport (:transport message) on-response)))))))

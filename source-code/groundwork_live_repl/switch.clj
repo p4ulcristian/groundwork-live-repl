@@ -1,18 +1,18 @@
-(ns study.switch
+(ns groundwork-live-repl.switch
   "The emergency switch: a file looked for every :check-every-ms. While a
    regular file is there, owned by the user the app runs as or by root, a
    REPL is open on loopback; once it is gone, the REPL closes. Reaching the
    file takes a shell on the machine, so the switch is reachable only over
    SSH, and nothing listens on the network while it is off.
 
-   Each change is written to the app's log: :study/emergency-opened and
-   :study/emergency-closed at :warn; a file the switch refuses
-   (:study/emergency-switch-refused), a REPL that couldn't open
-   (:study/emergency-open-failed) and a look that failed
-   (:study/emergency-switch-failed) at :error, each once, until the file is
+   Each change is written to the app's log: :groundwork-live-repl/emergency-opened and
+   :groundwork-live-repl/emergency-closed at :warn; a file the switch refuses
+   (:groundwork-live-repl/emergency-switch-refused), a REPL that couldn't open
+   (:groundwork-live-repl/emergency-open-failed) and a look that failed
+   (:groundwork-live-repl/emergency-switch-failed) at :error, each once, until the file is
    seen gone."
   (:require
-   [study.server :as server])
+   [groundwork-live-repl.server :as server])
   (:import
    (java.lang ProcessHandle)
    (java.nio.file Files LinkOption Path)
@@ -44,7 +44,7 @@
         {:look :refused :reason (str "owned by " owner ", not by " user " (the app's user) or root")}))))
 
 (defn- check-once!
-  "One look at the file, and the change it makes, under the study's lock.
+  "One look at the file, and the change it makes, under the groundwork-live-repl's lock.
    state: {:stopped? :server :quiet?}; :quiet? true after a refusal or a
    failure was written, until the file is seen gone."
   [{:keys [state lock log switch-settings middleware-vars tools]}]
@@ -62,7 +62,7 @@
                    (catch Throwable failure {:look :failed :failure failure}))]
           (case look
             :absent
-            (do (close! :study/emergency-closed {:study/file file})
+            (do (close! :groundwork-live-repl/emergency-closed {:groundwork-live-repl/file file})
                 (swap! state assoc :quiet? false))
 
             :on
@@ -70,24 +70,24 @@
               (try
                 (let [opened (server/open-server! switch-settings middleware-vars log :warn tools)]
                   (swap! state assoc :server opened)
-                  (log :warn :study/emergency-opened {:study/file         file
-                                                      :study/bind-address (:bind-address switch-settings)
-                                                      :study/port         (:port opened)}))
+                  (log :warn :groundwork-live-repl/emergency-opened {:groundwork-live-repl/file         file
+                                                      :groundwork-live-repl/bind-address (:bind-address switch-settings)
+                                                      :groundwork-live-repl/port         (:port opened)}))
                 (catch Throwable failure
                   (swap! state assoc :quiet? true)
-                  (log :error :study/emergency-open-failed {:study/file file :error failure}))))
+                  (log :error :groundwork-live-repl/emergency-open-failed {:groundwork-live-repl/file file :error failure}))))
 
             :refused
-            (do (close! :study/emergency-closed {:study/file file})
+            (do (close! :groundwork-live-repl/emergency-closed {:groundwork-live-repl/file file})
                 (when-not quiet?
                   (swap! state assoc :quiet? true)
-                  (log :error :study/emergency-switch-refused {:study/file file :study/reason reason})))
+                  (log :error :groundwork-live-repl/emergency-switch-refused {:groundwork-live-repl/file file :groundwork-live-repl/reason reason})))
 
             :failed
-            (do (close! :study/emergency-closed {:study/file file})
+            (do (close! :groundwork-live-repl/emergency-closed {:groundwork-live-repl/file file})
                 (when-not quiet?
                   (swap! state assoc :quiet? true)
-                  (log :error :study/emergency-switch-failed {:study/file file :error failure})))))))))
+                  (log :error :groundwork-live-repl/emergency-switch-failed {:groundwork-live-repl/file file :error failure})))))))))
 
 (defn start-watching!
   "Looks at the switch's file every :check-every-ms, on one daemon thread,
@@ -102,7 +102,7 @@
         executor (Executors/newSingleThreadScheduledExecutor
                   (reify ThreadFactory
                     (newThread [_ runnable]
-                      (doto (Thread. ^Runnable runnable "study-emergency-switch")
+                      (doto (Thread. ^Runnable runnable "live-repl-emergency-switch")
                         (.setDaemon true)))))]
     (.scheduleWithFixedDelay ^ScheduledExecutorService executor
                              ^Runnable (fn [] (try (check-once! watcher)
@@ -118,7 +118,7 @@
 
 (defn stop-watching!
   "Stops looking, and closes the REPL if the switch had opened it
-   (:study/emergency-closed)."
+   (:groundwork-live-repl/emergency-closed)."
   [{:keys [^ScheduledExecutorService executor state lock log switch-settings]}]
   (.shutdownNow executor)
   (locking lock
@@ -126,4 +126,4 @@
       (swap! state assoc :stopped? true :server nil)
       (when server
         (server/close-server! server)
-        (log :warn :study/emergency-closed {:study/file (:file switch-settings)})))))
+        (log :warn :groundwork-live-repl/emergency-closed {:groundwork-live-repl/file (:file switch-settings)})))))

@@ -1,5 +1,5 @@
-(ns study.settings
-  "study's settings and options, as malli shapes, checked before anything
+(ns groundwork-live-repl.settings
+  "groundwork-live-repl's settings and options, as malli shapes, checked before anything
    opens. Nothing has a default: every key is written out, and a missing or
    unknown one refuses, named, with every other problem at once."
   (:require
@@ -40,7 +40,7 @@
 
 (def ^:private loopback-address-shape
   [:and :string
-   [:fn {:error/message "should be a loopback address, like \"127.0.0.1\" or \"::1\": outside :development study listens on loopback only"}
+   [:fn {:error/message "should be a loopback address, like \"127.0.0.1\" or \"::1\": outside :development groundwork-live-repl listens on loopback only"}
     is-loopback-literal?]])
 
 (def ^:private port-shape
@@ -104,16 +104,16 @@
      [:emergency-switch [:maybe emergency-switch-shape]]]]])
 
 (def tool-shape
-  "One tool: the function, and the text (doc study.tools/its-name) shows."
+  "One tool: the function, and the text (doc groundwork-live-repl.tools/its-name) shows."
   [:map {:closed true}
    [:doc [:string {:min 1}]]
    [:function fn?]])
 
 (def options-shape
   "start-repl-server!'s options, every key required.
-   :log: the app's log, (log level event data), as logbook makes it.
+   :log: the app's log, (log level event data), as groundwork-logs makes it.
    :tools: the app's tools, by name, each a simple keyword: in the REPL,
-   study.tools/<name>. {} for none."
+   groundwork-live-repl.tools/<name>. {} for none."
   [:map {:closed true}
    [:log fn?]
    [:tools [:map-of [:and :keyword [:fn {:error/message "should be a keyword without a namespace"} simple-keyword?]]
@@ -127,13 +127,13 @@
   value)
 
 (defn check-settings
-  "Returns the settings; throws {:type :study/bad-settings :errors …} with
+  "Returns the settings; throws {:type :groundwork-live-repl/bad-settings :errors …} with
    every problem at once."
   [settings]
-  (check settings-shape settings :study/bad-settings "settings"))
+  (check settings-shape settings :groundwork-live-repl/bad-settings "settings"))
 
 (defn check-options
-  "Returns the options; throws {:type :study/bad-options :errors …} with
+  "Returns the options; throws {:type :groundwork-live-repl/bad-options :errors …} with
    every problem at once."
   [options]
-  (check options-shape options :study/bad-options "options"))
+  (check options-shape options :groundwork-live-repl/bad-options "options"))

@@ -1,37 +1,37 @@
-(ns study.server
+(ns groundwork-live-repl.server
   "Opening and closing one nREPL server: its handler (nREPL's own
    middleware, the app's, and the evaluation log outside them all), the
-   tools put into study.tools, the port file."
+   tools put into groundwork-live-repl.tools, the port file."
   (:require
    [clojure.java.io :as io]
    [nrepl.server :as nrepl-server]
-   [study.evaluations :as evaluations]
-   [study.tools]))
+   [groundwork-live-repl.evaluations :as evaluations]
+   [groundwork-live-repl.tools]))
 
 (defn resolve-middleware
   "The middleware vars the symbols name, each loaded; throws
-   {:type :study/middleware-not-found :symbols […]} naming every one that
+   {:type :groundwork-live-repl/middleware-not-found :symbols […]} naming every one that
    couldn't be."
   [symbols]
   (let [found   (mapv (fn [sym] [sym (try (requiring-resolve sym) (catch Exception _ nil))]) symbols)
         missing (into [] (comp (remove second) (map first)) found)]
     (when (seq missing)
       (throw (ex-info (str "No middleware var for " (pr-str missing))
-                      {:type :study/middleware-not-found :symbols missing})))
+                      {:type :groundwork-live-repl/middleware-not-found :symbols missing})))
     (mapv second found)))
 
 (defn- put-tools! [tools]
   (doseq [[tool-name {:keys [doc function]}] tools]
-    (intern 'study.tools (with-meta (symbol (name tool-name)) {:doc doc}) function)))
+    (intern 'groundwork-live-repl.tools (with-meta (symbol (name tool-name)) {:doc doc}) function)))
 
 (defn- take-tools-away! [tools]
   (doseq [tool-name (keys tools)]
-    (ns-unmap 'study.tools (symbol (name tool-name)))))
+    (ns-unmap 'groundwork-live-repl.tools (symbol (name tool-name)))))
 
 (defn open-server!
   "An nREPL server on bind-address and port, the middleware vars added to
    nREPL's own, every evaluation written to log at level; the tools put
-   into study.tools first, the port written to port-file (nil: none).
+   into groundwork-live-repl.tools first, the port written to port-file (nil: none).
    Returns {:server :port :port-file :tools}."
   [{:keys [bind-address port port-file]} middleware-vars log level tools]
   (let [handler (evaluations/wrap-handler-with-evaluation-log
