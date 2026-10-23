@@ -1,5 +1,5 @@
 (ns study.api
-  "manor's REPL: an nREPL server into the running app, by settings. study's
+  "groundwork's REPL: an nREPL server into the running app, by settings. study's
    one public namespace.
 
      ;; development: a REPL, on loopback unless the app writes another address

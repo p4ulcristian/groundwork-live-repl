@@ -1,5 +1,7 @@
 # REPLs by environment
 
+> **Changed in part** by [The family and its composer are groundwork](https://github.com/p4ulcristian/groundwork/blob/Starting-from-the-bottom/decisions/2026-10-23-the-family-and-its-composer-are-groundwork.md) (2026-10-23): manor, the family, and house, the composer, are both named groundwork now.
+
 > Carries over house's [REPLs by environment](https://github.com/p4ulcristian/house/blob/v0.5.0/decisions/2026-10-12-repls-by-environment.md) (2026-10-12), as changed by [Groundwork ships no team endpoints and no eval bridge](https://github.com/p4ulcristian/house/blob/v0.5.0/decisions/2026-10-18-groundwork-ships-no-team-endpoints-and-no-eval-bridge.md) (2026-10-18): there is no eval bridge, so previews get no REPL.
 
 **Decision:** where a REPL into a running app may exist, and the mode that says so (`:mode` in study's settings):

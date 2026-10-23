@@ -1,4 +1,4 @@
-;; study: manor's REPL. An nREPL server by settings (:development,
+;; study: groundwork's REPL. An nREPL server by settings (:development,
 ;; :ssh-only, or :off with an emergency switch), every evaluation written to
 ;; the app's log, the app's own tools in study.tools. One tree:
 ;; source-code/study/.

@@ -1,5 +1,7 @@
 # The tools are the app's functions, in study.tools
 
+> **Changed in part** by [The family and its composer are groundwork](https://github.com/p4ulcristian/groundwork/blob/Starting-from-the-bottom/decisions/2026-10-23-the-family-and-its-composer-are-groundwork.md) (2026-10-23): manor, the family, and house, the composer, are both named groundwork now.
+
 **Decision:** the REPL's tools are functions the app hands study, by name, in `start-repl-server!`'s options, `:tools`, every key required, `{}` for none:
 
 ```clojure

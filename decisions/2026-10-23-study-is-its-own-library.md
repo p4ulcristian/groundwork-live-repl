@@ -1,5 +1,7 @@
 # study is its own library
 
+> **Changed in part** by [The family and its composer are groundwork](https://github.com/p4ulcristian/groundwork/blob/Starting-from-the-bottom/decisions/2026-10-23-the-family-and-its-composer-are-groundwork.md) (2026-10-23): manor, the family, and house, the composer, are both named groundwork now.
+
 **Decision:** study, manor's REPL, is a library of its own, in its own public repository, under the MIT license; an app or a framework takes it from git by tag. It was Groundwork's `groundwork.repl` and `groundwork.repl.dev` (house v0.5.0); now it is the namespace `study`, with one public namespace, `study.api`, and the namespace the app's tools are put in, `study.tools`. Its `deps.edn` names only nREPL and malli; its tests run with nothing else on the classpath but the test runner and logbook (a real log to write into). It knows nothing of who uses it:
 
 - it starts an nREPL server by settings and writes every evaluation to the log the app hands it;
