@@ -245,7 +245,7 @@
     (is (= :groundwork-live-repl/bad-settings (:type data)))
     (is (= #{:address :middleware :surprise} (set (keys (:errors data)))))
     (is (= #{:bind-address :port-file} (set (keys (:address (:errors data))))) "the address's keys too"))
-  (is (= {:address {:kind ["unknown kind"]}}
+  (is (= {:address {:kind ["should say its :kind, :tcp or :unix-socket"]}}
          (:errors (error-data #(live-repl/start-repl-server! {:mode :development :address {:kind :udp} :middleware []} (options (atom [])))))))
   (is (= :groundwork-live-repl/bad-settings (error-type #(live-repl/start-repl-server! {:mode :production} (options (atom []))))))
   (let [data (error-data #(live-repl/start-repl-server! (development nil) {:tools {:a/b {:doc "x" :function inc}}}))]

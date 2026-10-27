@@ -65,7 +65,7 @@
    bind-address-shape; or {:kind :unix-socket :path …}, a Unix socket at
    an absolute path, in a folder only the app's user may enter."
   [bind-address-shape]
-  [:multi {:dispatch :kind}
+  [:multi {:dispatch :kind :error/message "should say its :kind, :tcp or :unix-socket"}
    [:tcp
     [:map {:closed true}
      [:kind [:= :tcp]]
