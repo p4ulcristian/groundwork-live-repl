@@ -52,52 +52,86 @@
 (def ^:private port-file-shape
   [:maybe [:string {:min 1}]])
 
+(def ^:private socket-path-shape
+  [:and :string
+   [:fn {:error/message "should be an absolute path"} is-absolute-path?]
+   ;; sun_path holds 108 bytes on Linux, with its ending zero
+   [:fn {:error/message "should be at most 107 bytes long, as a Unix socket's path is"}
+    #(<= (alength (.getBytes ^String % "UTF-8")) 107)]])
+
+(defn- make-address-shape
+  "Where a REPL listens, by :kind, every key required:
+   {:kind :tcp :bind-address … :port … :port-file …}, the address given by
+   bind-address-shape; or {:kind :unix-socket :path …}, a Unix socket at
+   an absolute path, in a folder only the app's user may enter."
+  [bind-address-shape]
+  [:multi {:dispatch :kind}
+   [:tcp
+    [:map {:closed true}
+     [:kind [:= :tcp]]
+     [:bind-address bind-address-shape]
+     [:port port-shape]
+     [:port-file port-file-shape]]]
+   [:unix-socket
+    [:map {:closed true}
+     [:kind [:= :unix-socket]]
+     [:path socket-path-shape]]]])
+
+(def ^:private any-address
+  (make-address-shape any-address-shape))
+
+(def ^:private loopback-address
+  (make-address-shape loopback-address-shape))
+
 (def emergency-switch-shape
   "What the emergency switch watches, and what it opens.
    :file: the switch, an absolute path: while a regular file is there,
    owned by the user the app runs as (or root), a REPL is open; when it is
    gone, the REPL closes.
    :check-every-ms: how often the file is looked for.
-   :bind-address, :port, :middleware, :port-file: the REPL it opens, as
-   :ssh-only's: loopback only."
+   :address, :middleware: the REPL it opens, as :ssh-only's: on loopback,
+   or on a Unix socket."
   [:map {:closed true}
    [:file [:and :string [:fn {:error/message "should be an absolute path"} is-absolute-path?]]]
    [:check-every-ms [:int {:min 1}]]
-   [:bind-address loopback-address-shape]
-   [:port port-shape]
-   [:middleware middleware-shape]
-   [:port-file port-file-shape]])
+   [:address loopback-address]
+   [:middleware middleware-shape]])
 
 (def settings-shape
   "start-repl-server!'s settings, by :mode, every key required.
-   :mode :development: a REPL on :bind-address, any IP address written as
-   one; loopback unless the app writes another.
-   :mode :ssh-only: a REPL on :bind-address, a loopback address only,
-   reached over an SSH tunnel.
+   :mode :development: a REPL on :address; a :tcp one on any IP address
+   written as one, loopback unless the app writes another.
+   :mode :ssh-only: a REPL on :address, a :tcp one on a loopback address
+   only, reached over an SSH tunnel; or a :unix-socket one, reached on the
+   machine (or through the tunnel, which forwards a socket too).
    :mode :off: no REPL; :emergency-switch nil for none, or what the switch
    watches and opens (emergency-switch-shape).
-   :port: 0 to 65535; 0 takes a free port, which find-repl-port and the
-   port file tell.
+   :address: where the REPL listens, by :kind:
+     {:kind :tcp :bind-address \"127.0.0.1\" :port 7888 :port-file nil}:
+     :port 0 to 65535, 0 takes a free port, which find-repl-address and
+     the port file tell; :port-file a path the port is written to while
+     the REPL is open (an editor finds it there, .nrepl-port), nil for
+     none.
+     {:kind :unix-socket :path \"/run/app/repl/live-repl.sock\"}: a Unix
+     socket at an absolute path. Its folder must be the app's user's and
+     let nobody else in (no permission for its group or others), checked
+     when the REPL opens; the socket is made reachable by its owner only,
+     a socket left there by a process that ended is replaced, and the
+     socket is deleted when the REPL closes.
    :middleware: the nREPL middleware added to nREPL's own, each the
    qualified symbol of a var (cider-nrepl's, shadow-cljs's), loaded at the
-   start; [] for none.
-   :port-file: a path the port is written to while the REPL is open (an
-   editor finds it there, .nrepl-port), nil for none."
+   start; [] for none."
   [:multi {:dispatch :mode}
    [:development
     [:map {:closed true}
      [:mode [:= :development]]
-     [:bind-address any-address-shape]
-     [:port port-shape]
-     [:middleware middleware-shape]
-     [:port-file port-file-shape]]]
+     [:address any-address]
+     [:middleware middleware-shape]]]
    [:ssh-only
     [:map {:closed true}
      [:mode [:= :ssh-only]]
-     [:bind-address loopback-address-shape]
-     [:port port-shape]
-     [:middleware middleware-shape]
-     [:port-file port-file-shape]]]
+     [:address loopback-address]
+     [:middleware middleware-shape]]]
    [:off
     [:map {:closed true}
      [:mode [:= :off]]

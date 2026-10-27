@@ -6,5 +6,5 @@
    [groundwork-live-repl.api]))
 
 (deftest the-api-names
-  (is (= '#{settings-shape options-shape start-repl-server! find-repl-port stop-repl-server!}
+  (is (= '#{settings-shape options-shape start-repl-server! find-repl-address stop-repl-server!}
          (set (keys (ns-publics 'groundwork-live-repl.api))))))

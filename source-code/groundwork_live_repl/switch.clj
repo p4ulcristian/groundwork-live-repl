@@ -1,7 +1,7 @@
 (ns groundwork-live-repl.switch
   "The emergency switch: a file looked for every :check-every-ms. While a
    regular file is there, owned by the user the app runs as or by root, a
-   REPL is open on loopback; once it is gone, the REPL closes. Reaching the
+   REPL is open on loopback (or on its Unix socket); once it is gone, the REPL closes. Reaching the
    file takes a shell on the machine, so the switch is reachable only over
    SSH, and nothing listens on the network while it is off.
 
@@ -70,9 +70,8 @@
               (try
                 (let [opened (server/open-server! switch-settings middleware-vars log :warn tools)]
                   (swap! state assoc :server opened)
-                  (log :warn :groundwork-live-repl/emergency-opened {:groundwork-live-repl/file         file
-                                                      :groundwork-live-repl/bind-address (:bind-address switch-settings)
-                                                      :groundwork-live-repl/port         (:port opened)}))
+                  (log :warn :groundwork-live-repl/emergency-opened {:groundwork-live-repl/file    file
+                                                                     :groundwork-live-repl/address (server/describe-address opened)}))
                 (catch Throwable failure
                   (swap! state assoc :quiet? true)
                   (log :error :groundwork-live-repl/emergency-open-failed {:groundwork-live-repl/file file :error failure}))))
@@ -111,10 +110,11 @@
                              0 (long (:check-every-ms switch-settings)) TimeUnit/MILLISECONDS)
     (assoc watcher :executor executor)))
 
-(defn find-port
-  "The port the switch's REPL listens on, nil while it is closed."
+(defn find-address
+  "Where the switch's REPL listens (server/describe-address), nil while it
+   is closed."
   [{:keys [state]}]
-  (:port (:server @state)))
+  (some-> (:server @state) server/describe-address))
 
 (defn stop-watching!
   "Stops looking, and closes the REPL if the switch had opened it

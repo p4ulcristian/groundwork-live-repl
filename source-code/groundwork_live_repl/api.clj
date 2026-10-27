@@ -4,19 +4,23 @@
 
      ;; development: a REPL, on loopback unless the app writes another address
      (def repl (live-repl/start-repl-server!
-                {:mode :development :bind-address \"127.0.0.1\" :port 7888
-                 :middleware [] :port-file \".nrepl-port\"}
+                {:mode :development
+                 :address {:kind :tcp :bind-address \"127.0.0.1\" :port 7888 :port-file \".nrepl-port\"}
+                 :middleware []}
                 {:log log :tools tools}))
 
-     ;; stage: loopback only, reached over an SSH tunnel
-     {:mode :ssh-only :bind-address \"127.0.0.1\" :port 7888 :middleware [] :port-file nil}
+     ;; stage: loopback only, reached over an SSH tunnel; or a Unix socket, in a
+     ;; folder only the app's user may enter
+     {:mode :ssh-only :address {:kind :tcp :bind-address \"127.0.0.1\" :port 7888 :port-file nil} :middleware []}
+     {:mode :ssh-only :address {:kind :unix-socket :path \"/run/app/repl/live-repl.sock\"} :middleware []}
 
      ;; production: off; the REPL opens while the switch's file is there
      {:mode :off
       :emergency-switch {:file \"/run/app/live-repl-open\" :check-every-ms 5000
-                         :bind-address \"127.0.0.1\" :port 7888 :middleware [] :port-file nil}}
+                         :address {:kind :tcp :bind-address \"127.0.0.1\" :port 7888 :port-file nil}
+                         :middleware []}}
 
-     (live-repl/find-repl-port repl)   ;=> 7888, or nil while nothing listens
+     (live-repl/find-repl-address repl)   ;=> {:kind :tcp :bind-address \"127.0.0.1\" :port 7888}, or nil while nothing listens
      (live-repl/stop-repl-server! repl)
 
    Every evaluation, in every mode, is written to the app's log (:log),
@@ -51,11 +55,10 @@
     (:development :ssh-only)
     (let [middleware-vars (server/resolve-middleware (:middleware checked-settings))
           opened          (server/open-server! checked-settings middleware-vars log :info tools)]
-      (log :info :groundwork-live-repl/started {:groundwork-live-repl/mode         mode
-                                 :groundwork-live-repl/bind-address (:bind-address checked-settings)
-                                 :groundwork-live-repl/port         (:port opened)
-                                 :groundwork-live-repl/middleware   (:middleware checked-settings)
-                                 :groundwork-live-repl/tools        (tool-names tools)})
+      (log :info :groundwork-live-repl/started {:groundwork-live-repl/mode       mode
+                                                :groundwork-live-repl/address    (server/describe-address opened)
+                                                :groundwork-live-repl/middleware (:middleware checked-settings)
+                                                :groundwork-live-repl/tools      (tool-names tools)})
       {:mode mode :log log :server opened})
 
     :off
@@ -77,7 +80,7 @@
    one runs (:groundwork-live-repl/already-running).
    :development and :ssh-only open a REPL now; :off opens none, and with
    an emergency switch starts looking at its file. Writes :groundwork-live-repl/started.
-   Returns the groundwork-live-repl, for find-repl-port and stop-repl-server!."
+   Returns the groundwork-live-repl, for find-repl-address and stop-repl-server!."
   [live-repl-settings options]
   (let [checked-settings      (settings/check-settings live-repl-settings)
         {:keys [log tools]}   (settings/check-options options)
@@ -91,15 +94,16 @@
         (reset! running nil)
         (throw failure)))))
 
-(defn find-repl-port
-  "The port the groundwork-live-repl's REPL listens on, nil while none is open (:off, the
-   switch's file gone, stopped)."
+(defn find-repl-address
+  "Where the groundwork-live-repl's REPL listens: {:kind :tcp :bind-address … :port …},
+   the port it took, or {:kind :unix-socket :path …}; nil while none is
+   open (:off, the switch's file gone, stopped)."
   [groundwork-live-repl]
   (if-let [watcher (:watcher groundwork-live-repl)]
-    (switch/find-port watcher)
+    (switch/find-address watcher)
     (when-not (= :off (:mode groundwork-live-repl))
       (when (= (::claim groundwork-live-repl) @running)
-        (get-in groundwork-live-repl [:server :port])))))
+        (server/describe-address (:server groundwork-live-repl))))))
 
 (defn stop-repl-server!
   "Closes the REPL (its connections too) and takes the tools away, or
