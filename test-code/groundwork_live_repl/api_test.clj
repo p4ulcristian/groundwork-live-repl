@@ -156,7 +156,7 @@
       (is (= {"groundwork-live-repl/mode" "ssh-only" "groundwork-live-repl/address" {"kind" "unix-socket" "path" path}}
              (select-keys (get (first (lines-of texts "groundwork-live-repl/started")) "data")
                           ["groundwork-live-repl/mode" "groundwork-live-repl/address"])))
-      (is (= 1 (count (lines-of texts "groundwork-live-repl/evaluated"))) "its evaluations written, as on TCP")
+      (is (= 2 (count (lines-of texts "groundwork-live-repl/evaluated"))) "its two evaluations written, as on TCP")
       (finally (live-repl/stop-repl-server! repl)))
     (is (not (.exists (io/file path))) "closed: the socket is deleted")
     (is (nil? (live-repl/find-repl-address repl))))
