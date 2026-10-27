@@ -10,7 +10,7 @@ mode, is written to the app's log. The app's own tools are plain functions in
 `groundwork-live-repl.tools` while a REPL is open.
 
 ```clojure
-io.github.p4ulcristian/groundwork-live-repl {:git/tag "v0.1.3" :git/sha "db5bd86"}
+io.github.p4ulcristian/groundwork-live-repl {:git/tag "v0.1.4" :git/sha "5dfa25e"}
 ```
 
 Needs only nREPL and malli. One public namespace, `groundwork-live-repl.api`.
